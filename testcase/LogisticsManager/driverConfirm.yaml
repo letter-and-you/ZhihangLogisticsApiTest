@@ -1,0 +1,16 @@
+- baseInfo:
+    api_name: 司机确认运输
+    url: /api/order/app/schedule/confirm
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}   # 需要司机端登录的Cookie（可使用同一账号）
+  testCase:
+    - case_name: 正常确认运输
+      json:
+        scheduleNo: ${get_extract_data(scheduleNo)}   # 依赖调度派车提取的调度单号
+        timeStamp: ${timestamp()}
+      validation:
+        - eq: { 'code': 20000 }
+        - eq: { 'message': '司机确认成功' }
+        - eq: { 'scheduleNoStatus': '1' }

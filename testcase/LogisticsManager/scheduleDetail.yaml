@@ -1,0 +1,15 @@
+- baseInfo:
+    api_name: 获取调度单详情
+    url: /api/order/pc/scheduleDetail/info
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}
+  testCase:
+    - case_name: 正常获取调度单详情
+      json:
+        scheduleNo: ${get_extract_data(scheduleNo)}
+        timeStamp: ${timestamp()}
+      validation:
+        - eq: { 'code': 20000 }
+        - contains: { 'data.logisticsOrderNo': 'W2023' }   # 示例断言

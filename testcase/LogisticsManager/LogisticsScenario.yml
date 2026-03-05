@@ -1,0 +1,144 @@
+- baseInfo:
+    api_name: 用户登录
+    url: /dar/user/login
+    method: post
+    header:
+      Content-Type: application/x-www-form-urlencoded;charset=UTF-8
+  testCase:
+    - case_name: 登录获取Cookie
+      data:
+        user_name: test01
+        passwd: admin123
+      validation:
+        - contains: { 'msg': '登录成功' }
+
+- baseInfo:
+    description: 物流业务场景测试用例（货主下单→集团接单→物流派车→状态校验）
+    api_name: 获取下单物料信息
+    url: /api/order/customer/orderPlan/getMaterial
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}  # 关联登录返回的Cookie
+  testCase:
+    - case_name: 获取物料信息（物流下单前置）
+      json: {}  # 无需传参
+      validation:
+        - eq: { 'code': 20000 }
+        - eq: { 'message': '操作成功' }
+      extract_list:
+        materialIds: $.material[*]
+- baseInfo:
+    api_name: 货主下物流订单
+    url: /api/order/customer/orderPlan/create
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}
+  testCase:
+    - case_name: 货主正常下物流订单
+      json:
+        orderInfo:
+          template: "define"
+          urgentType: 2
+          cusName: "总仓"
+          orderType: 1
+          charter: 2
+          planType: 1
+          transStartTime: "2025-01-01 10:00:00"
+          transEndTime: "2025-01-03 10:00:00"
+          orderMark: "物流测试订单"
+          cusId: "1661242770195464193"
+        orderCapacityList:
+          - materialCategoryId: ${get_extract_data(materialIds,1)}
+            materialCategory: "粮食"
+            materialUnit: "KG"
+            materialName: "小麦"
+            materialUnitId: "1660891402561581058"
+            settlementUnit: "KG"
+            syncMaterialId: "4"
+            materialId: "1661349087048306690"
+            sendCusId: "1661663745663741954"
+            sendCusName: "码头尖庄仓"
+            receiveCusId: "1661624733406285825"
+            receiveCusName: "502车间"
+            sendAdrId: "1674617286107828226"
+            sendAdrName: "长宁县五谷粮食购销有限责任公司"
+            sendPoiId: "1674615819826425857"
+            receiveAdrId: "1674208708683337730"
+            receiveAdrName: "五区一区"
+            receivePoiId: "1674208399908237313"
+            receiveAdrDetail: "五区一区"
+            materialSpecId: "1661349088147214337"
+            specName: "1"
+            materialNum: 100
+            materialSpecUnit: "KG"
+            remark: "原粮"
+        orderVehicleList: []
+        orderBoxList: []
+      validation:
+        - eq: { 'code': 20000 }
+        - contains: { 'message': '操作成功' }
+      extract:
+        logisticsOrderNo: $.orderNo
+- baseInfo:
+    api_name: 集团接收物流订单
+    url: /api/order/pc/order/master/receive
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}
+  testCase:
+    - case_name: 集团正常接收订单
+      json:
+        orderId: ${get_extract_data(logisticsOrderNo)}
+        times: ${timestamp()}
+      validation:
+        - eq: { 'code': 20000 }
+        - eq: { 'message': '操作成功' }
+- baseInfo:
+    api_name: 物流公司接单
+    url: /api/order/pc/order/trans/receive
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}
+  testCase:
+    - case_name: 物流公司正常接单
+      json:
+        orderId: ${get_extract_data(logisticsOrderNo)}  # 这里用集团接收的订单号
+        times: ${timestamp()}
+      validation:
+        - eq: { 'code': 20000 }
+        - eq: { 'message': '操作成功' }
+      extract:
+        logisticsId: $.data.logistics_id   # 修正提取表达式
+- baseInfo:
+    api_name: 物流公司调度派车
+    url: /api/order/pc/logisticsOrder/handCapacityDispatch
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}
+  testCase:
+    - case_name: 物流正常调度派车
+      json:
+        - logisticsOrderId: ${get_extract_data(logisticsId)}
+          itemId: ${get_extract_data(materialIds,1)}
+          dispatchNum: 100
+          carrierId: "1661558222301904898"
+          carrierName: "长凡贸易有限公司"
+          driverId: "1661573945107611649"
+          driverName: "李斯"
+          driverPhone: "15810108888"
+          vehicleId: "1661574934279684098"
+          vehicleNo: "川AL6826"
+          vehicleColor: 2
+          vehicleDistinguishNo: "AL6826"
+          vehicleType: "1657997625979293698"
+          vehicleTypeName: "自卸车"
+      validation:
+        - eq: { 'code': 20000 }
+        - contains: { 'message': '操作成功' }
+      extract:
+        scheduleNo: $.scheduleNo

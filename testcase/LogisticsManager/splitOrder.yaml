@@ -1,0 +1,20 @@
+- baseInfo:
+    api_name: 物流公司拆分订单
+    url: /api/order/pc/logisticsOrder/handSplitOrder
+    method: post
+    header:
+      Content-Type: application/json;charset=UTF-8
+      Cookie: ${get_extract_data(cookie)}
+  testCase:
+    - case_name: 正常拆分订单
+      json:
+        list:
+          - itemId: ${get_extract_data(materialIds,1)}   # 物料ID
+            itemNum: 100
+            splitNum: 50
+            logistics_id: ${get_extract_data(logisticsId)}   # 物流订单号
+        timeStamp: ${timestamp()}
+      validation:
+        - eq: { 'code': 20000 }
+        - eq: { 'logisticsStatus': '1' }
+        - eq: { 'message': '操作成功' }
